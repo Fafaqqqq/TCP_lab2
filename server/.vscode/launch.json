@@ -1,0 +1,41 @@
+{
+  // Use IntelliSense to learn about possible attributes.
+  // Hover to view descriptions of existing attributes.
+  // For more information, visit: https://go.microsoft.com/fwlink/?linkid=830387
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "emulator dbg",
+      "type": "cppdbg",
+      "request": "launch",
+      "program": "${workspaceFolder}/example/bin/lab2",
+      "args": [
+        "--file",
+        "test.txt",
+        "--port",
+        "1234",
+        "--matrix",
+        "1000",
+        "500",
+        "--matrix",
+        "500",
+        "1200"
+      ],
+      "stopAtEntry": false,
+      "cwd": "${workspaceFolder}/example/bin",
+      "environment": [
+        
+      ],
+      "externalConsole": false,
+      "MIMode": "gdb",
+      "setupCommands": [
+        {
+          "description": "Enable pretty-printing for gdb",
+          "text": "-enable-pretty-printing",
+          "ignoreFailures": true
+        }
+      ],
+      "preLaunchTask": "build"
+    }
+  ]
+}
