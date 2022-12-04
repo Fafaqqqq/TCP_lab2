@@ -15,11 +15,11 @@
         "--port",
         "1234",
         "--matrix",
-        "1000",
-        "500",
+        "5",
+        "6",
         "--matrix",
-        "500",
-        "1200"
+        "6",
+        "5"
       ],
       "stopAtEntry": false,
       "cwd": "${workspaceFolder}/example/bin",

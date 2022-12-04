@@ -41,20 +41,22 @@ int main()
   }
 
   // request/message from client
-  const string msg = "Hello from Client!\n";
+  string msg = "ready\n";
   boost::system::error_code error;
   boost::asio::write(socket, boost::asio::buffer(msg), error);
   if (!error)
   {
-    cout << "Client sent hello message!" << endl;
+    cout << "Ready!" << endl;
   }
   else
   {
     cout << "send failed: " << error.message() << endl;
   }
+
   // getting response from server
   boost::asio::streambuf receive_buffer;
-  boost::asio::read(socket, receive_buffer, boost::asio::transfer_all(), error);
+  boost::asio::read_until(socket, receive_buffer, "\n", error);
+
   if (error && error != boost::asio::error::eof)
   {
     cout << "receive failed: " << error.message() << endl;
@@ -64,5 +66,26 @@ int main()
     const char *data = boost::asio::buffer_cast<const char *>(receive_buffer.data());
     cout << data << endl;
   }
+
+  msg = "done\n";
+  boost::asio::write(socket, boost::asio::buffer(msg), error);
+  if (error)
+  {
+    cout << "send failed: " << error.message() << endl;
+  }
+
+  // boost::asio::streambuf receive_buffer1;
+  boost::asio::read_until(socket, receive_buffer, "\n", error);
+
+  if (error && error != boost::asio::error::eof)
+  {
+    cout << "receive failed: " << error.message() << endl;
+  }
+  else
+  {
+    const char *data = boost::asio::buffer_cast<const char *>(receive_buffer.data());
+    cout << data << endl;
+  }
+  
   return 0;
 }

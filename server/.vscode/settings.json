@@ -70,7 +70,8 @@
     "semaphore": "cpp",
     "stop_token": "cpp",
     "typeindex": "cpp",
-    "variant": "cpp"
+    "variant": "cpp",
+    "*.ipp": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled"
 }
