@@ -1,8 +1,10 @@
 #include <iostream>
 #include <boost/asio.hpp>
+#include <boost/stacktrace.hpp>
 #include <vector>
 #include <sstream>
 #include <fstream>
+#include <cstdarg>
 
 #include "matrix.h"
 
@@ -11,6 +13,27 @@ using ip::tcp;
 using std::cout;
 using std::endl;
 using std::string;
+
+void _Assert(bool expression, const char* file, int line, const char* format, ...)
+{
+  va_list params;
+  va_start(params, format);
+
+  string stacktrace = boost::stacktrace::to_string(boost::stacktrace::stacktrace());
+  if (!expression)
+  {
+    printf("<----------------------------- ASSERT: ----------------------------->\n");
+    printf("FILE: %s.\n", file);
+    printf("LINE: %d.\n", line);
+    // printf("MESSAGE: ");
+    // printf(format, params);
+    printf("STACKSTARACE: \n");
+    printf("%s", stacktrace.c_str());
+    exit(-1);
+  }
+}
+
+#define Assert(expression, format, ...) _Assert(expression, __FILE__ , __LINE__, format, ##__VA_ARGS__)
 
 static int to_int(const std::string &str)
 {
@@ -48,8 +71,8 @@ static std::vector<lab2::matrix> matrix_generator(int argc, char **argv)
         }
       }
 
-      std::cout << mat << std::endl
-                << std::endl;
+      // std::cout << mat << std::endl
+      //           << std::endl;
 
       result.push_back(std::move(mat));
     }
@@ -58,23 +81,75 @@ static std::vector<lab2::matrix> matrix_generator(int argc, char **argv)
   return result;
 }
 
-string read_(tcp::socket &socket)
+void write_matrixes(tcp::socket &socket, std::vector<lab2::matrix>& mat_v)
 {
-  boost::asio::streambuf buf;
-  boost::asio::read_until(socket, buf, "\n");
-  string data = boost::asio::buffer_cast<const char *>(buf.data());
-  return data;
+  int tx_buf_size = mat_v[0].cols() * mat_v[0].rows() / 2 + 
+                    mat_v[1].cols() * mat_v[1].rows() / 2 + 5;
+
+  std::vector<int> tx_buf(tx_buf_size);
+
+  auto tx_buf_iter = tx_buf.begin();
+  *tx_buf_iter++ = tx_buf.size() - 1;
+
+  for (int mat_cnt = 0; mat_cnt < mat_v.size(); mat_cnt++)
+  {
+    int rows;
+    int cols;
+
+    if (!mat_cnt)
+    {
+      *tx_buf_iter++ = rows = mat_v[mat_cnt].rows();
+      *tx_buf_iter++ = cols = mat_v[mat_cnt].cols() / 2;
+    }
+    else
+    {
+      *tx_buf_iter++ = rows = mat_v[mat_cnt].rows() / 2;
+      *tx_buf_iter++ = cols = mat_v[mat_cnt].cols();
+    }
+
+    for (int i = 0; i < rows; i++)
+    {
+      for (int j = 0; j < cols; j++)
+      {
+        *tx_buf_iter++ = mat_v[mat_cnt][i][j];
+      }
+    }
+  }
+
+  boost::system::error_code error;
+  boost::asio::write(socket, boost::asio::buffer(tx_buf.data(), tx_buf.size() * sizeof(int)), error);
+  // Assert(!(!error), "Can`t write data.\n");
 }
 
-void send_(tcp::socket &socket, const string &message)
+lab2::matrix read_matrix(tcp::socket& socket)
 {
-  const string msg = message + "\n";
-  boost::asio::write(socket, boost::asio::buffer(message));
-}
+  boost::system::error_code error;
+  boost::asio::streambuf receive_buffer;
 
-void send_buffer(tcp::socket &socket, const string &buffer)
-{
-  boost::asio::write(socket, boost::asio::buffer(buffer));
+  int bytes_cnt;
+  boost::asio::read(socket, boost::asio::buffer(&bytes_cnt, sizeof(int)), error);
+  // Assert(!(!error), "[ERROR] -- Receive failed\n");
+  
+  std::vector<int> buffer(bytes_cnt);
+  boost::asio::read(socket, boost::asio::buffer(buffer.data(), bytes_cnt * sizeof(int)), error);
+  // Assert(!(!error), "[ERROR] -- Receive failed\n");
+
+  auto buf_iter = buffer.begin();
+
+  int rows = *buf_iter++;
+  int cols = *buf_iter++;
+
+  lab2::matrix matrix(rows, cols);
+
+  for (int i = 0; i < rows; i++)
+  {
+    for (int j = 0; j < cols; j++)
+    {
+      matrix[i][j] = *buf_iter++;
+    }
+  }
+
+  return matrix;
 }
 
 int main(int argc, char **argv)
@@ -117,67 +192,7 @@ int main(int argc, char **argv)
     std::cerr << "The required number of matrices wasn`t specified!" << std::endl;
     exit(1);
   }
-
-  auto mat_a = mat_v[0].data();
-  auto mat_b = mat_v[1].data();
-
-  int tx_buf_a_size = mat_v[0].cols() * mat_v[0].rows() / 2;
-  int tx_buf_b_size = mat_v[1].cols() * mat_v[1].rows() / 2;
-
-  // std::cout << mat_v[0] << std::endl
-  //           << std::endl;
-  // std::cout << mat_v[1] << std::endl
-  //           << std::endl;
-
-  std::vector<char> tx_buf(tx_buf_a_size * sizeof(int) + 2 * sizeof(int) + 1 + 
-                           tx_buf_b_size * sizeof(int) + 2 * sizeof(int) + 1);
-
-  auto tx_buf_iter = tx_buf.begin();
-  {
-    (int &)*tx_buf_iter = mat_v[0].rows();
-    tx_buf_iter += sizeof(int);
-    (int &)*tx_buf_iter = mat_v[0].cols();
-    tx_buf_iter += sizeof(int);
-  }
-
-  for (int i = 0; i < mat_v[0].rows(); i++)
-  {
-    for (int j = 0; j < mat_v[0].cols() / 2; j++)
-    {
-      (int &)*tx_buf_iter = mat_a[i][j];
-      //std::cout << (int &)*tx_buf_iter << ' ';
-      tx_buf_iter += sizeof(int);
-    }
-    //std::cout << std::endl;
-  }
-  //std::cout << std::endl;
-
-  {
-    (int &)*tx_buf_iter = mat_v[1].rows();
-    tx_buf_iter += sizeof(int);
-    (int &)*tx_buf_iter = mat_v[1].cols();
-    tx_buf_iter += sizeof(int);
-  }
-
-  for (int i = 0; i < mat_v[1].rows() / 2; i++)
-  {
-    for (int j = 0; j < mat_v[1].cols(); j++)
-    {
-      (int &)*tx_buf_iter = mat_b[i][j];
-      tx_buf_iter += sizeof(int);
-      // std::cout << mat_b[i][j] << ' ';
-    }
-    // std::cout << std::endl;
-  }
-
-  tx_buf.back() = '\n';
-
-  // std::cout << std::endl;
-
-  auto tx_a_ptr = tx_buf.data();
-
-  string data(tx_buf.begin(), tx_buf.end());
-  // auto tx_b_ptr = mat_tx_buf_a.data();
+  
   // auto result = mat_v[0] * mat_v[1];
 
   boost::asio::io_service io_service;
@@ -186,23 +201,63 @@ int main(int argc, char **argv)
   // socket creation
   tcp::socket socket_(io_service);
   // waiting for connection
-  std::cout << "Wainting for connection...\n"
+  std::cout << "Wainting for connection..."
             << std::endl;
 
   acceptor_.accept(socket_);
-  // read operation
-  string status = read_(socket_);
 
-  //string data(tx_buf.begin(), tx_buf.end());
-  send_buffer(socket_, data);
+  auto begin = std::chrono::steady_clock::now();
 
-  cout << status << endl;
+  write_matrixes(socket_, mat_v);
+  auto matrix = read_matrix(socket_);
 
-  string response = read_(socket_);
+  lab2::matrix mat1(mat_v[0].rows(), mat_v[0].cols() / 2 ), mat2(mat_v[1].rows() / 2 , mat_v[1].cols());
 
-  std::cout << response << std::endl;
+  for (int i = 0 ; i < mat_v[0].rows(); i++)
+  {
+    for (int j = mat_v[0].cols() / 2; j < mat_v[0].cols(); j++)
+    {
+      mat1[i][j - mat_v[0].cols() / 2] = mat_v[0][i][j];
+    }
+  }
 
-  send_(socket_, "123\n");
+  for (int i = mat_v[1].rows() / 2; i < mat_v[1].rows(); i++)
+  {
+    for (int j = 0; j < mat_v[1].cols(); j++)
+    {
+      mat2[i - mat_v[1].rows() / 2][j] = mat_v[1][i][j];
+    }
+  }
+
+  lab2::matrix matrix1 = mat1 * mat2;
+
+  // std::cout << matrix1 << std::endl;
+  // std::cout << std::endl;
+
+  for (int i = 0; i < matrix1.rows(); i++)
+  {
+    for (int j = 0; j < matrix1.cols(); j++)
+    {
+      matrix[i][j] += matrix1[i][j];
+    }
+  }
   
+  auto end = std::chrono::steady_clock::now();
+
+  auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+  printf("[P]: time -> %ldms\n", elapsed_ms.count());
+
+
+  begin = std::chrono::steady_clock::now();
+
+  mat_v[0] * mat_v[1];
+
+  end = std::chrono::steady_clock::now();
+
+  elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
+
+  printf("[NP]: time -> %ldms\n", elapsed_ms.count());
+
   return 0;
 }

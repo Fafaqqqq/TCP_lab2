@@ -9,7 +9,6 @@ namespace lab2
   {
     public:
       matrix() = default;
-
       matrix(int rows, int cols)
       : data_(new int*[rows]), 
         rows_(rows),

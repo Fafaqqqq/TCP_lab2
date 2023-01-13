@@ -58,7 +58,19 @@
     "mutex": "cpp",
     "compare": "cpp",
     "concepts": "cpp",
-    "numbers": "cpp"
+    "numbers": "cpp",
+    "csignal": "cpp",
+    "any": "cpp",
+    "bitset": "cpp",
+    "complex": "cpp",
+    "coroutine": "cpp",
+    "list": "cpp",
+    "source_location": "cpp",
+    "future": "cpp",
+    "semaphore": "cpp",
+    "stop_token": "cpp",
+    "typeindex": "cpp",
+    "variant": "cpp"
   },
   "C_Cpp.errorSquiggles": "Disabled"
 }
