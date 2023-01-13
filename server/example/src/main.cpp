@@ -156,9 +156,8 @@ int main(int argc, char **argv)
 {
   srand(time(NULL));
 
-  std::ofstream fout;
   int port;
-  std::string filename;
+  std::ofstream fout("result.txt", std::ios::app);
 
   if (1 == argc)
   {
@@ -172,17 +171,6 @@ int main(int argc, char **argv)
     {
       port = to_int(argv[++i]);
     }
-    if (std::string(argv[i]) == "--file")
-    {
-      fout.open(argv[++i], std::ios::app);
-      filename = argv[i];
-    }
-  }
-
-  if (!fout.is_open())
-  {
-    std::cerr << "File \"" << filename << "\" doesn`t exist!" << std::endl;
-    exit(1);
   }
 
   auto mat_v = matrix_generator(argc, argv);
@@ -201,8 +189,8 @@ int main(int argc, char **argv)
   // socket creation
   tcp::socket socket_(io_service);
   // waiting for connection
-  std::cout << "Wainting for connection..."
-            << std::endl;
+  // std::cout << "Wainting for connection..."
+            // << std::endl;
 
   acceptor_.accept(socket_);
 
@@ -247,7 +235,7 @@ int main(int argc, char **argv)
   auto elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
   printf("[P]: time -> %ldms\n", elapsed_ms.count());
-
+  fout << "[P]: time -> " << elapsed_ms.count() << "ms\n";
 
   begin = std::chrono::steady_clock::now();
 
@@ -258,6 +246,7 @@ int main(int argc, char **argv)
   elapsed_ms = std::chrono::duration_cast<std::chrono::milliseconds>(end - begin);
 
   printf("[NP]: time -> %ldms\n", elapsed_ms.count());
+  fout << "[NP]: time -> " << elapsed_ms.count() << "ms\n\n";
 
   return 0;
 }

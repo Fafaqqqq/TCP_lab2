@@ -41,6 +41,28 @@
         "clear": true,
         "focus": true
       }
+    },
+    {
+      "label": "test",
+      "type": "shell",
+      "command": "./test.sh",
+      "args": [
+      ],
+      "options": {
+        "cwd": "${workspaceFolder}"
+      },
+      "problemMatcher": [
+        "$gcc"
+      ],
+      "group": {
+        "kind": "build",
+        "isDefault": true
+      },
+      "presentation": {
+        "clear": true,
+        "focus": true
+      }
     }
+
   ]
 }

@@ -1,0 +1,6 @@
+--port 1234 --matrix 1000 500 --matrix 500 2000
+--port 1234 --matrix 1500 500 --matrix 500 1500
+--port 1234 --matrix 200 500 --matrix 500 200
+--port 1234 --matrix 100 50 --matrix 50 100
+--port 1234 --matrix 10 500 --matrix 500 10
+--port 1234 --matrix 5 10 --matrix 10 100

@@ -10,15 +10,13 @@
       "request": "launch",
       "program": "${workspaceFolder}/example/bin/lab2",
       "args": [
-        "--file",
-        "test.txt",
         "--port",
         "1234",
         "--matrix",
-        "100",
-        "70",
+        "5",
+        "10",
         "--matrix",
-        "200",
+        "10",
         "100"
       ],
       "stopAtEntry": false,
